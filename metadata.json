@@ -1,0 +1,6 @@
+{
+  "name": "Amreen's Academy",
+  "description": "Amreen's Academy — professional beauty and makeup education. Explore beauty courses, student work and practical training.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

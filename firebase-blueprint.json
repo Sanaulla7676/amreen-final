@@ -1,0 +1,162 @@
+{
+  "entities": {
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Course admission or makeover studio enquiry submitted by a prospective student.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "phone": { "type": "string", "minLength": 7, "maxLength": 20, "pattern": "^[0-9+\\-\\s()]{7,20}$" },
+        "course": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "interest": { "type": "string", "maxLength": 120 },
+        "message": { "type": "string", "maxLength": 1000 },
+        "sourcePage": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "status": { "type": "string", "enum": ["new", "contacted", "visited", "enrolled", "closed"] },
+        "counselorNotes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "course", "interest", "message", "sourcePage", "status", "createdAt", "updatedAt"]
+    },
+    "Batch": {
+      "title": "Batch",
+      "description": "Scheduled 40-day Beauty & Makeup academy batch with seat capacity and fee details.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "startDate": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "timing": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "feeInr": { "type": "number" },
+        "instalmentNote": { "type": "string", "maxLength": 160 },
+        "seatLimit": { "type": "number" },
+        "enrolledCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "full", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "startDate", "timing", "feeInr", "instalmentNote", "seatLimit", "enrolledCount", "status", "createdAt", "updatedAt"]
+    },
+    "Enrollment": {
+      "title": "Enrollment",
+      "description": "Student enrollment and 3-instalment fee ledger linked to an academy batch.",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "phone": { "type": "string", "minLength": 7, "maxLength": 20, "pattern": "^[0-9+\\-\\s()]{7,20}$" },
+        "email": { "type": "string", "maxLength": 160 },
+        "batchId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "feePlan": { "type": "string", "enum": ["full", "instalments_3"] },
+        "totalFeeInr": { "type": "number" },
+        "amountPaidInr": { "type": "number" },
+        "instalmentsPaid": { "type": "number" },
+        "status": { "type": "string", "enum": ["reserved", "active", "completed", "cancelled"] },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentName", "phone", "email", "batchId", "feePlan", "totalFeeInr", "amountPaidInr", "instalmentsPaid", "status", "notes", "createdAt", "updatedAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Publicly verifiable course completion certificate issued by Amreen's Academy.",
+      "type": "object",
+      "properties": {
+        "certCode": { "type": "string", "minLength": 4, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "studentName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "courseName": { "type": "string", "minLength": 3, "maxLength": 140 },
+        "completionDate": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "grade": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "status": { "type": "string", "enum": ["valid", "revoked"] },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["certCode", "studentName", "courseName", "completionDate", "grade", "status", "issuedAt", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Verified academy administrator entry.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 160 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "displayName", "role", "createdAt"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Dynamic homepage and course configuration managed via the Admin CMS.",
+      "type": "object",
+      "properties": {
+        "heroHeadline": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "heroSubheadline": { "type": "string", "minLength": 5, "maxLength": 260 },
+        "courseName": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "courseDays": { "type": "number" },
+        "courseFee": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "instalmentNote": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "announcementBanner": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["heroHeadline", "heroSubheadline", "courseName", "courseDays", "courseFee", "instalmentNote", "announcementBanner", "updatedAt"]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Published graduate testimonial and review displayed as social proof.",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "batchLabel": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "focusArea": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "quote": { "type": "string", "minLength": 8, "maxLength": 360 },
+        "rating": { "type": "number" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentName", "batchLabel", "focusArea", "quote", "rating", "published", "createdAt", "updatedAt"]
+    },
+    "ConnectionCheck": {
+      "title": "ConnectionCheck",
+      "description": "Health check document for verifying Firestore client connectivity.",
+      "type": "object",
+      "properties": {
+        "ok": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/enquiries/{enquiryId}": {
+      "schema": { "$ref": "#/entities/Enquiry" },
+      "description": "Prospective student enquiries submitted from the homepage dialog and contact page."
+    },
+    "/batches/{batchId}": {
+      "schema": { "$ref": "#/entities/Batch" },
+      "description": "Upcoming and ongoing 40-day skin, hair & makeup course batches."
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": { "$ref": "#/entities/Enrollment" },
+      "description": "Enrolled student records and 3-instalment fee tracking."
+    },
+    "/certificates/{certId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Publicly verifiable academy completion certificates keyed by certificate code."
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Live dynamic website content overrides edited from the Admin CMS."
+    },
+    "/testimonials/{testimonialId}": {
+      "schema": { "$ref": "#/entities/Testimonial" },
+      "description": "Student testimonials and graduate outcomes managed in the Admin CMS."
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Trusted administrator identities."
+    },
+    "/test/connection": {
+      "schema": { "$ref": "#/entities/ConnectionCheck" },
+      "description": "Startup connection probe path."
+    }
+  }
+}

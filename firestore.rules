@@ -1,0 +1,312 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Default-deny global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Pillar 3: Reusable hardened primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedEmail() && (
+        request.auth.token.email == 'sanaullaa19@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Pillar 2: Validation Blueprints (Anti-Update-Gap) synchronized with firebase-blueprint.json
+    function isValidEnquiry(data) {
+      return data.keys().hasAll([
+          'name', 'phone', 'course', 'interest', 'message',
+          'sourcePage', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'name', 'phone', 'course', 'interest', 'message',
+          'sourcePage', 'status', 'counselorNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 20 &&
+        data.phone.matches('^[0-9+\\-\\s()]{7,20}$') &&
+        data.course is string && data.course.size() >= 2 && data.course.size() <= 120 &&
+        data.interest is string && data.interest.size() <= 120 &&
+        data.message is string && data.message.size() <= 1000 &&
+        data.sourcePage is string && data.sourcePage.size() >= 1 && data.sourcePage.size() <= 80 &&
+        data.status in ['new', 'contacted', 'visited', 'enrolled', 'closed'] &&
+        (!('counselorNotes' in data) || (data.counselorNotes is string && data.counselorNotes.size() <= 1000)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBatch(data) {
+      return data.keys().hasAll([
+          'title', 'startDate', 'timing', 'feeInr', 'instalmentNote',
+          'seatLimit', 'enrolledCount', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'startDate', 'timing', 'feeInr', 'instalmentNote',
+          'seatLimit', 'enrolledCount', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 120 &&
+        data.startDate is string && data.startDate.size() >= 4 && data.startDate.size() <= 40 &&
+        data.timing is string && data.timing.size() >= 3 && data.timing.size() <= 80 &&
+        data.feeInr is number && data.feeInr >= 0 && data.feeInr <= 500000 &&
+        data.instalmentNote is string && data.instalmentNote.size() <= 160 &&
+        data.seatLimit is number && data.seatLimit >= 1 && data.seatLimit <= 500 &&
+        data.enrolledCount is number && data.enrolledCount >= 0 && data.enrolledCount <= data.seatLimit &&
+        data.status in ['open', 'full', 'completed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidEnrollment(data) {
+      return data.keys().hasAll([
+          'studentName', 'phone', 'email', 'batchId', 'feePlan',
+          'totalFeeInr', 'amountPaidInr', 'instalmentsPaid', 'status',
+          'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentName', 'phone', 'email', 'batchId', 'feePlan',
+          'totalFeeInr', 'amountPaidInr', 'instalmentsPaid', 'status',
+          'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 20 &&
+        data.phone.matches('^[0-9+\\-\\s()]{7,20}$') &&
+        data.email is string && data.email.size() <= 160 &&
+        isValidId(data.batchId) &&
+        data.feePlan in ['full', 'instalments_3'] &&
+        data.totalFeeInr is number && data.totalFeeInr >= 0 && data.totalFeeInr <= 500000 &&
+        data.amountPaidInr is number && data.amountPaidInr >= 0 && data.amountPaidInr <= data.totalFeeInr &&
+        data.instalmentsPaid is number && data.instalmentsPaid >= 0 && data.instalmentsPaid <= 3 &&
+        data.status in ['reserved', 'active', 'completed', 'cancelled'] &&
+        data.notes is string && data.notes.size() <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCertificate(data, certId) {
+      return data.keys().hasAll([
+          'certCode', 'studentName', 'courseName', 'completionDate',
+          'grade', 'status', 'issuedAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'certCode', 'studentName', 'courseName', 'completionDate',
+          'grade', 'status', 'issuedAt', 'updatedAt'
+        ]) &&
+        isValidId(data.certCode) &&
+        data.certCode == certId &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 100 &&
+        data.courseName is string && data.courseName.size() >= 3 && data.courseName.size() <= 140 &&
+        data.completionDate is string && data.completionDate.size() >= 4 && data.completionDate.size() <= 40 &&
+        data.grade is string && data.grade.size() >= 1 && data.grade.size() <= 40 &&
+        data.status in ['valid', 'revoked'] &&
+        data.issuedAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll([
+          'heroHeadline', 'heroSubheadline', 'courseName', 'courseDays',
+          'courseFee', 'instalmentNote', 'announcementBanner', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'heroHeadline', 'heroSubheadline', 'courseName', 'courseDays',
+          'courseFee', 'instalmentNote', 'announcementBanner', 'updatedAt'
+        ]) &&
+        data.heroHeadline is string && data.heroHeadline.size() >= 3 && data.heroHeadline.size() <= 120 &&
+        data.heroSubheadline is string && data.heroSubheadline.size() >= 5 && data.heroSubheadline.size() <= 260 &&
+        data.courseName is string && data.courseName.size() >= 3 && data.courseName.size() <= 120 &&
+        data.courseDays is number && data.courseDays >= 1 && data.courseDays <= 365 &&
+        data.courseFee is string && data.courseFee.size() >= 2 && data.courseFee.size() <= 40 &&
+        data.instalmentNote is string && data.instalmentNote.size() >= 3 && data.instalmentNote.size() <= 120 &&
+        data.announcementBanner is string && data.announcementBanner.size() <= 200 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTestimonial(data) {
+      return data.keys().hasAll([
+          'studentName', 'batchLabel', 'focusArea', 'quote',
+          'rating', 'published', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentName', 'batchLabel', 'focusArea', 'quote',
+          'rating', 'published', 'createdAt', 'updatedAt'
+        ]) &&
+        data.studentName is string && data.studentName.size() >= 2 && data.studentName.size() <= 80 &&
+        data.batchLabel is string && data.batchLabel.size() >= 2 && data.batchLabel.size() <= 80 &&
+        data.focusArea is string && data.focusArea.size() >= 2 && data.focusArea.size() <= 80 &&
+        data.quote is string && data.quote.size() >= 8 && data.quote.size() <= 360 &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.published is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Connection check probe
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Admin registry (read self only; prevent privilege escalation)
+    match /admins/{adminUid} {
+      allow get: if isVerifiedEmail() && isValidId(adminUid) && request.auth.uid == adminUid;
+      allow list, create, update, delete: if false;
+    }
+
+    // Enquiries: public write-only dropbox; Admin-only read/list/update/delete
+    match /enquiries/{enquiryId} {
+      allow get: if isVerifiedEmail() && isValidId(enquiryId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(enquiryId) &&
+        isValidEnquiry(incoming()) &&
+        incoming().status == 'new' &&
+        !('counselorNotes' in incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(enquiryId) &&
+        isValidEnquiry(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'counselorNotes', 'updatedAt']);
+      allow delete: if isVerifiedEmail() && isValidId(enquiryId) && isAdmin();
+    }
+
+    // Batches: public schedule visibility; Admin-only mutations
+    match /batches/{batchId} {
+      allow get: if isValidId(batchId);
+      allow list: if true;
+      allow create: if isVerifiedEmail() &&
+        isValidId(batchId) &&
+        isValidBatch(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(batchId) &&
+        isValidBatch(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'startDate', 'timing', 'feeInr', 'instalmentNote',
+          'seatLimit', 'enrolledCount', 'status', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedEmail() && isValidId(batchId) && isAdmin();
+    }
+
+    // Enrollments: strict Admin-only access with relational batch check
+    match /enrollments/{enrollmentId} {
+      allow get: if isVerifiedEmail() && isValidId(enrollmentId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isVerifiedEmail() &&
+        isValidId(enrollmentId) &&
+        isValidEnrollment(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/batches/$(incoming().batchId));
+      allow update: if isVerifiedEmail() &&
+        isValidId(enrollmentId) &&
+        isValidEnrollment(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().batchId == existing().batchId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'studentName', 'phone', 'email', 'feePlan', 'totalFeeInr',
+          'amountPaidInr', 'instalmentsPaid', 'status', 'notes', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedEmail() && isValidId(enrollmentId) && isAdmin();
+    }
+
+    // Certificates: public single-document lookup by exact certCode; Admin-only list & write
+    match /certificates/{certId} {
+      allow get: if isValidId(certId);
+      allow list: if isAdmin();
+      allow create: if isVerifiedEmail() &&
+        isValidId(certId) &&
+        isValidCertificate(incoming(), certId) &&
+        isAdmin() &&
+        incoming().issuedAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(certId) &&
+        isValidCertificate(incoming(), certId) &&
+        isAdmin() &&
+        incoming().issuedAt == existing().issuedAt &&
+        incoming().certCode == existing().certCode &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'studentName', 'courseName', 'completionDate', 'grade', 'status', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedEmail() && isValidId(certId) && isAdmin();
+    }
+
+    // Site Settings: public read for dynamic copy; Admin-only mutations
+    match /siteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if false;
+      allow create: if isVerifiedEmail() &&
+        isValidId(settingId) &&
+        isValidSiteSettings(incoming()) &&
+        isAdmin() &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(settingId) &&
+        isValidSiteSettings(incoming()) &&
+        isAdmin() &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'heroHeadline', 'heroSubheadline', 'courseName', 'courseDays',
+          'courseFee', 'instalmentNote', 'announcementBanner', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedEmail() && isValidId(settingId) && isAdmin();
+    }
+
+    // Testimonials: public social proof (no PII); Admin-only mutations
+    match /testimonials/{testimonialId} {
+      allow get: if isValidId(testimonialId);
+      allow list: if true;
+      allow create: if isVerifiedEmail() &&
+        isValidId(testimonialId) &&
+        isValidTestimonial(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(testimonialId) &&
+        isValidTestimonial(incoming()) &&
+        isAdmin() &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'studentName', 'batchLabel', 'focusArea', 'quote',
+          'rating', 'published', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedEmail() && isValidId(testimonialId) && isAdmin();
+    }
+  }
+}

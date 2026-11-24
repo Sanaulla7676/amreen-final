@@ -1,0 +1,52 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "./styles/styles.css";
+@import "./styles/motion.css";
+@import "./styles/campaign-enhancements.css";
+@import "./styles/pages.css";
+@import "./styles/upgrade.css";
+@import "./styles/brand-emblem.css";
+@import "./styles/mobile-home.css";
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scroll-reveal classes active automatically for React views */
+.motion-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* Shared backend card styling that blends seamlessly into .surface-light */
+.backend-panel {
+  border-radius: 18px;
+  border: 1px solid rgba(7, 26, 55, 0.12);
+  background: #ffffff;
+  box-shadow: 0 14px 35px rgba(5, 22, 44, 0.08);
+}
+
+.backend-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(7, 26, 55, 0.18);
+  background: #fbf7f7;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #071a37;
+}
+
+.backend-input:focus {
+  outline: 2px solid rgba(140, 21, 57, 0.25);
+  border-color: #8c1539;
+  background: #ffffff;
+}
